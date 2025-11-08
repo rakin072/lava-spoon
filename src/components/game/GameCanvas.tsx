@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import Phaser from "phaser";
 import { Button } from "@/components/ui/button";
-import { Heart, Shield, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { computeDynamicPalette, heatFactor, lightenColor } from "./themeSystem";
 import { SpawnManager, createFallingObject, applyBehavior, SpawnType } from "./fallingSystem";
@@ -103,6 +102,7 @@ export const GameCanvas = ({ stageId, onGameOver, onBack }: GameCanvasProps) => 
   let lastTouchClientX: number | null = null;
   let debugText: Phaser.GameObjects.Text | null = null;
   let shieldCircle: Phaser.GameObjects.Arc | null = null;
+  let inSceneScoreText: Phaser.GameObjects.Text | null = null;
     let cursors: Phaser.Types.Input.Keyboard.CursorKeys;
   let fallingObjects: Phaser.Physics.Arcade.Group;
   const spawner = new SpawnManager(5);
@@ -451,6 +451,54 @@ export const GameCanvas = ({ stageId, onGameOver, onBack }: GameCanvasProps) => 
         .setBlendMode(Phaser.BlendModes.MULTIPLY)
         .setAlpha(0.15);
 
+      // High score rendered in-scene (top-right). Keep this minimal so the React HUD can be removed.
+      try {
+        let highScore = 0;
+        try { highScore = Number(localStorage.getItem('lavaLegendsHighScore') || 0); } catch {}
+        const hsSize = Math.max(14, Math.floor(GAME_W * 0.04));
+        const highScoreText = this.add.text(GAME_W - 12, 12, `HI ${highScore}`, { fontFamily: 'monospace', fontSize: `${hsSize}px`, color: '#FFFFFF', stroke: '#000000', strokeThickness: 2 })
+          .setOrigin(1, 0)
+          .setDepth(10000)
+          .setScrollFactor(0);
+        // Live score text (top-left)
+        try {
+          const sSize = Math.max(16, Math.floor(GAME_W * 0.05));
+          inSceneScoreText = this.add.text(12, 12, `SCORE ${scoreRef.current || 0}`, { fontFamily: 'monospace', fontSize: `${sSize}px`, color: '#FFFFFF', stroke: '#000000', strokeThickness: 2 })
+            .setOrigin(0, 0)
+            .setDepth(10000)
+            .setScrollFactor(0);
+        } catch (e) {}
+      } catch (e) {}
+
+      // --- In-scene UI panels (top notification stack + bottom safe bar) ---
+      try {
+        const panelMaxW = Math.max(200, Math.min(GAME_W - 32, Math.floor(GAME_W * 0.9)));
+        const panelH = Math.max(36, Math.floor(GAME_H * 0.07));
+        const spacing = 8;
+
+        const topGroup = this.add.container(0, 0).setDepth(9995).setScrollFactor(0);
+        // create two stacked notification panels to mimic the removed React HUD areas
+        for (let i = 0; i < 2; i++) {
+          const y = 12 + i * (panelH + spacing) + (sSize || 18);
+          const bg = this.add.roundedRect(GAME_W / 2 - panelMaxW / 2, y, panelMaxW, panelH, 8, 0xff7a1a, 0.95)
+            .setOrigin(0, 0)
+            .setStrokeStyle(3, 0xffb86b);
+          // subtle inner highlight strip
+          const strip = this.add.rectangle(GAME_W / 2, y + 6, panelMaxW - 16, 6, 0xffcfa0, 0.5).setOrigin(0.5, 0);
+          const label = this.add.text(GAME_W / 2 - panelMaxW / 2 + 12, y + 8, '', { fontFamily: 'Press Start 2P', fontSize: '12px', color: '#fff' }).setAlpha(0.92);
+          topGroup.add([bg, strip, label]);
+        }
+
+        // bottom safe area / control placeholder
+        const bottomH = Math.max(48, Math.floor(GAME_H * 0.08));
+        const bottomY = GAME_H - bottomH - 8;
+        const bottomBg = this.add.roundedRect(GAME_W / 2 - panelMaxW / 2, bottomY, panelMaxW, bottomH, 8, 0x6b0000, 0.88)
+          .setOrigin(0, 0)
+          .setDepth(9995)
+          .setStrokeStyle(3, 0xff7a1a);
+        this.add.text(GAME_W / 2 - panelMaxW / 2 + 12, bottomY + 10, '', { fontFamily: 'Press Start 2P', fontSize: '12px', color: '#fff' }).setDepth(9996).setScrollFactor(0).setAlpha(0.95);
+      } catch (e) {}
+
       // Create a single shield visual circle and keep it hidden until shieldActive
       try {
         shieldCircle = this.add.circle(GAME_W / 2, GAME_H / 2, 50, 0x00ffff, 0.08).setDepth(-1).setVisible(false);
@@ -663,6 +711,7 @@ export const GameCanvas = ({ stageId, onGameOver, onBack }: GameCanvasProps) => 
         // Fake-out penalizes score slightly and counts as miss
         playSound('hazard');
         setScore((prev) => Math.max(0, prev - 10));
+        try { const newS = Math.max(0, (scoreRef.current || 0) - 10); scoreRef.current = newS; inSceneScoreText?.setText(`SCORE ${newS}`); } catch {}
         toast.error('Fake-out! -10');
         resetCombo();
         return;
@@ -737,6 +786,7 @@ export const GameCanvas = ({ stageId, onGameOver, onBack }: GameCanvasProps) => 
           const newState = applyPowerup(playerState, selected);
           const delta = (newState.score || 0) - (playerState.score || 0);
           if (delta !== 0) setScore((prev) => prev + delta);
+          try { if (delta !== 0) { scoreRef.current = (scoreRef.current || 0) + delta; inSceneScoreText?.setText(`SCORE ${scoreRef.current}`); } } catch {}
           // Activation side-effects mapped to existing in-game flags
           if (selected === "MagnetSpoon") {
             magnetActive = true;
@@ -802,6 +852,7 @@ export const GameCanvas = ({ stageId, onGameOver, onBack }: GameCanvasProps) => 
         }
         
   setScore((prev) => prev + earnedPoints);
+  try { const newS = (scoreRef.current || 0) + earnedPoints; scoreRef.current = newS; inSceneScoreText?.setText(`SCORE ${newS}`); } catch {}
         // Rare-catch blush impulse (visual reward)
         if (settings.particles && earnedPoints >= 50) {
           // small pink ember/burst near player
@@ -839,24 +890,19 @@ export const GameCanvas = ({ stageId, onGameOver, onBack }: GameCanvasProps) => 
     // Lightweight floating point popup (no toast) for score increments
     function createPointPopup(x: number, y: number, points: number, comboMult: number, feverActive: boolean) {
       if (!sceneRef) return;
-      // Popup styling based on combo tiers
-      let color = '#FFD700';
-      let outline = '#000000';
-      let scale = 0.92;
-      if (comboMult >= 5) { color = '#FF2ED1'; outline = '#4A0038'; scale = 1.25; }
-      else if (comboMult >= 3) { color = '#FF7B00'; outline = '#4A2100'; scale = 1.15; }
-      else if (comboMult >= 2) { color = '#FFDD33'; outline = '#3A2B00'; scale = 1.05; }
-      else if (comboMult >= 1.5) { color = '#FFE680'; outline = '#3A3000'; scale = 1.0; }
+      // Use a clear, light color palette so popups stand out crisply against the dark background
+      // but remain subtle. Scale slightly with combo; fever keeps a small extra pulse.
+      let color = '#E8FFFF'; // pale cyan/white
+      let scale = 0.95;
+      if (comboMult >= 5) { scale = 1.18; }
+      else if (comboMult >= 3) { scale = 1.12; }
+      else if (comboMult >= 2) { scale = 1.06; }
+      else if (comboMult >= 1.5) { scale = 1.0; }
 
-      if (feverActive) {
-        // Fever overrides with pulsing magenta/gold blend
-        color = '#FF47FF';
-        outline = '#4A004A';
-        scale += 0.1;
-      }
+      if (feverActive) { scale += 0.06; }
 
       const txt = sceneRef
-        .add.text(x, y - 30, `+${points}`, {
+        .add.text(x, y - 20, `+${points}`, {
           fontFamily: 'Press Start 2P',
           fontSize: '14px',
           color,
@@ -866,38 +912,40 @@ export const GameCanvas = ({ stageId, onGameOver, onBack }: GameCanvasProps) => 
         .setAlpha(0)
         .setScale(scale);
 
-      // Improve readability with subtle stroke and shadow
+      // Subtle thin stroke and soft shadow to keep the text legible over visuals
       // @ts-ignore - phaser typings may not expose these chain methods
-      txt.setStroke?.('#000000', 3);
+      try { txt.setStroke?.('#FFFFFF', 1); } catch {}
       // @ts-ignore
-      txt.setShadow?.(0, 2, 'rgba(0,0,0,0.55)', 2, false, true);
+      try { txt.setShadow?.(0, 2, 'rgba(0,0,0,0.25)', 2, false, true); } catch {}
+      try { (txt as any).setBlendMode?.(Phaser.BlendModes.ADD); } catch {}
 
-      // Two-stage tween: quick ease-in, then float and fade
+      // Faster, snappier animation: quick pop-in and rapid fade-up
       sceneRef.tweens.add({
         targets: txt,
         alpha: 1,
-        y: y - 42,
-        scale: scale * 1.05,
-        duration: 160,
+        y: y - 34,
+        scale: scale * 1.04,
+        duration: 90,
         ease: 'Sine.easeOut',
         onComplete: () => {
-          // Fever glow pulsing tween (parallel)
+          // Tiny fever pulse (if active)
           if (feverActive) {
             sceneRef.tweens.add({
               targets: txt,
-              scale: scale * 1.15,
+              scale: scale * 1.12,
               yoyo: true,
-              repeat: 3,
-              duration: 140,
+              repeat: 1,
+              duration: 100,
               ease: 'Sine.easeInOut'
             });
           }
+          // Rapid fade and float
           sceneRef.tweens.add({
             targets: txt,
             alpha: 0,
-            y: y - 78,
-            scale: scale * 1.02,
-            duration: 420,
+            y: y - 58,
+            scale: scale * 1.01,
+            duration: 180,
             ease: 'Sine.easeIn',
             onComplete: () => txt.destroy(),
           });
@@ -985,62 +1033,19 @@ export const GameCanvas = ({ stageId, onGameOver, onBack }: GameCanvasProps) => 
 
       {/* Foreground content */}
   <div className="relative z-[5] flex flex-col items-center justify-start p-safe-shell game-shell w-full" style={{ paddingLeft: '0.75rem', paddingRight: '0.75rem' }}>
-  {/* HUD */}
-  <div className="w-full bg-card border-4 border-primary p-4 mb-4 space-y-2 safe-top-offset" style={{ maxWidth: viewport.baseWidth }}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            {[...Array(3)].map((_, i) => (
-              <Heart
-                key={i}
-                className={`w-8 h-8 ${
-                  i < lives ? "text-destructive fill-destructive" : "text-muted"
-                }`}
-              />
-            ))}
-          </div>
-          
-          <div className="text-2xl font-bold text-primary">
-            SCORE: {score}
-          </div>
-          
-          <div className="text-xl font-bold text-foreground">
-            ⏱️ {timeLeft}s
-          </div>
-        </div>
-
-        {/* Combo and Power-up indicators */}
-        <div className="flex items-center justify-between text-sm">
-          <div className="flex items-center gap-2">
-            {combo >= 5 && (
-              <div className="bg-accent px-3 py-1 border-2 border-foreground animate-pulse-glow">
-                🔥 COMBO x{combo}
-              </div>
-            )}
-          </div>
-          
-          {activePowerUp && (
-            <div className="bg-secondary px-3 py-1 border-2 border-foreground flex items-center gap-2">
-              {activePowerUp === "shield" && <Shield className="w-4 h-4" />}
-              {activePowerUp === "magnet" && <Zap className="w-4 h-4" />}
-              {activePowerUp === "multiplier" && "✨"}
-              <span className="uppercase">{activePowerUp}</span>
-            </div>
-          )}
-        </div>
-      </div>
+      {/* HUD removed from React layer so the Phaser canvas can occupy the full play area.
+          High score will be drawn in-scene by the Phaser `create()` function. */}
 
       {/* Game canvas */}
       <div
         ref={gameRef}
-        className="border-4 border-primary shadow-2xl game-canvas-wrapper flex-shrink-0"
-        style={{ width: '100%', aspectRatio: `${viewport.baseWidth}/${viewport.baseHeight}`, maxHeight: '100%', touchAction: 'none', WebkitTapHighlightColor: 'transparent' }}
+        className="game-canvas-wrapper w-full h-full"
+        style={{ width: '100vw', height: '100vh', maxHeight: '100vh', touchAction: 'none', WebkitTapHighlightColor: 'transparent' }}
       />
 
       {/* Controls removed: exit, pause and settings buttons intentionally hidden */}
 
-      <p className="text-sm text-muted-foreground mt-2 mb-0">
-        Move with mouse/touch or arrow keys
-      </p>
+      {/* hint removed — gameplay chrome is now minimal and the canvas occupies the play area */}
       {/* Show orientation tip only when user is in landscape on mobile. Portrait is our primary mode now. */}
       <OrientationPrompt show={viewport.orientation === 'landscape' && viewport.device === 'mobile'} />
 
