@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { computeDynamicPalette, lightenColor } from "./themeSystem";
+import { slowFactor } from "@/lib/gameFlags";
 
 export type SpawnType = "collectible" | "hazard" | "powerup" | "chain" | "fakeout" | "splitting";
 
@@ -164,13 +165,13 @@ export function applyBehavior(obj: CreateResult, behavior: BehaviorType, time: n
   const c = obj.container;
   switch (behavior) {
     case "straight": {
-      b.setVelocity(0, 200);
+      b.setVelocity(0, 200 * slowFactor);
       break;
     }
     case "zigzag": {
       const vy = 180;
       const vx = Math.sin(time * 0.005) * 70; // time in ms
-      b.setVelocity(vx, vy);
+      b.setVelocity(vx * slowFactor, vy * slowFactor);
       break;
     }
     case "spiral": {
@@ -178,12 +179,12 @@ export function applyBehavior(obj: CreateResult, behavior: BehaviorType, time: n
       const angle = time * 0.002;
       const radius = 28;
       c.x += Math.cos(angle) * 1.2; // use position updates for spiral
-      c.y += vy * (delta / 1000);
+      c.y += vy * slowFactor * (delta / 1000);
       break;
     }
     case "orbit": {
       // handled via meta.satellite in update loop
-      b.setVelocity(0, 170);
+      b.setVelocity(0, 170 * slowFactor);
       break;
     }
   }

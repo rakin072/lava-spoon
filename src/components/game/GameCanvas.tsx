@@ -5,6 +5,9 @@ import { Heart, Pause, Play, Shield, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { computeDynamicPalette, heatFactor, lightenColor } from "./themeSystem";
 import { SpawnManager, createFallingObject, applyBehavior, SpawnType } from "./fallingSystem";
+import sampleScoreOutcome from "@/lib/scoring";
+import { applyPowerup } from "@/lib/powerups";
+import { setSlowFactor } from "@/lib/gameFlags";
 import { ComboSystem, DifficultyEngine, FeverMode } from "./scoringSystem";
 import { useGameSettings } from "@/hooks/useGameSettings";
 import { PlayerController } from "./playerSystem";
@@ -704,10 +707,41 @@ export const GameCanvas = ({ stageId, onGameOver, onBack }: GameCanvasProps) => 
         catches++;
   sumReaction += Math.max(0, gameTime - lastSpawnedAt);
 
-  let earnedPoints = Math.floor((Number(meta.points ?? 0)) * comboSys.multiplier * (fever.active ? 2 : 1) * (globalScoreBoost || 1));
-        
-        // Apply legacy multiplier power-up AFTER combo multiplier
-        if (multiplierActive) earnedPoints *= 2;
+        // New scoring: sample outcome probabilities for normal collectibles
+        let earnedPoints = 0;
+        if (meta.isPowerUp) {
+          // Map our configured power-ups to in-game behaviors
+          const powerups = ["FireStar", "MagnetSpoon", "IceCrystal", "PhoenixFeather"];
+          const selected = powerups[Math.floor(Math.random() * powerups.length)];
+          // Construct minimal player state for the helper
+          const playerState = { score: scoreRef.current, speed: 1, hp: lives, effects: {}, baselineSpeed: 1 } as any;
+          const newState = applyPowerup(playerState, selected);
+          const delta = (newState.score || 0) - (playerState.score || 0);
+          if (delta !== 0) setScore((prev) => prev + delta);
+          // Activation side-effects mapped to existing in-game flags
+          if (selected === "MagnetSpoon") {
+            magnetActive = true;
+            toast.success("Magnet Spoon! Items will be attracted.", { duration: 1500 });
+            setTimeout(() => { magnetActive = false; if (playerController) playerController.endPowerUp(); }, 10000);
+          } else if (selected === "IceCrystal") {
+            // slow falling objects
+            setSlowFactor(0.6, 7000);
+            toast.success("Ice Crystal! Slowed items.", { duration: 1500 });
+          } else if (selected === "PhoenixFeather") {
+            setLives((prev) => Math.max(prev, 1));
+            toast.success("Phoenix Feather! Revived.", { duration: 1500 });
+          } else if (selected === "FireStar") {
+            toast.success("Fire Star! Bonus points.", { duration: 1500 });
+          }
+          if (playerController) playerController.triggerPowerUp();
+          playSound("powerup", { pitch: fever.active ? 1.3 : 1.0 });
+        } else {
+          const outcome = sampleScoreOutcome();
+          const basePoints = Math.floor(Number(outcome.points || 0));
+          earnedPoints = Math.floor(basePoints * comboSys.multiplier * (fever.active ? 2 : 1) * (globalScoreBoost || 1));
+          // Apply legacy multiplier power-up AFTER combo multiplier
+          if (multiplierActive) earnedPoints *= 2;
+        }
 
         if (comboState.milestone) {
           // Pitch ramp based on milestone tier

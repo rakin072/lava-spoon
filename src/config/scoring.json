@@ -1,0 +1,9 @@
+{
+  "outcomes": [
+    { "id": "lose1", "prob": 0.45, "type": "fixed", "points": -1 },
+    { "id": "gain1", "prob": 0.30, "type": "fixed", "points": 1 },
+    { "id": "gain3to5", "prob": 0.20, "type": "range", "min": 3, "max": 5 },
+    { "id": "jackpot", "prob": 0.05, "type": "jackpot" }
+  ],
+  "jackpotReward": { "type": "molten_gem", "points": 50 }
+}

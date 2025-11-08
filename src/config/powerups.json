@@ -1,0 +1,13 @@
+{
+  "powerups": {
+    "FireStar": { "id": "FireStar", "label": "Fire Star", "type": "bonus", "scoreDelta": 5, "durationMs": 8000 },
+    "MagnetSpoon": { "id": "MagnetSpoon", "label": "Magnet Spoon", "type": "attract", "radiusBonus": 120, "durationMs": 10000 },
+    "IceCrystal": { "id": "IceCrystal", "label": "Ice Crystal", "type": "slow", "speedFactor": 0.6, "durationMs": 7000 },
+    "PhoenixFeather": { "id": "PhoenixFeather", "label": "Phoenix Feather", "type": "revive", "reviveHp": 1 }
+  },
+  "obstacles": {
+    "Rock": { "id": "Rock", "label": "Rock", "type": "damage", "scoreDelta": -1 },
+    "AshCloud": { "id": "AshCloud", "label": "Ash Cloud", "type": "vision", "darkenFactor": 0.6, "durationMs": 6000 },
+    "DarkSpirit": { "id": "DarkSpirit", "label": "Dark Spirit", "type": "steal", "stealPoints": 2 }
+  }
+}

@@ -1,7 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, Trophy, Medal } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { useLottery } from "@/lib/useLottery";
+import LotteryBadge from "./LotteryBadge";
+import LotteryModal from "./LotteryModal";
 
 interface LeaderboardEntry {
   rank: number;
@@ -33,6 +36,28 @@ export const Leaderboard = ({ onBack }: LeaderboardProps) => {
       ]);
     }
   }, []);
+
+  // compute lottery tickets whenever leaderboard entries change
+  const { computeTickets } = useLottery();
+  useEffect(() => {
+    if (!entries || entries.length === 0) return;
+    // map entries to {id, score}
+    const list = entries.map((e) => ({ id: e.name, name: e.name, score: e.score }));
+    computeTickets(list, 5); // award tickets to top 5 by default
+  }, [entries, computeTickets]);
+
+  // open modal when a new draw occurs
+  const { meta } = useLottery();
+  const [modalOpen, setModalOpen] = useState(false);
+  const lastDrawRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (meta?.lastWinner && meta.lastWinner.drawAt) {
+      if (lastDrawRef.current !== meta.lastWinner.drawAt) {
+        lastDrawRef.current = meta.lastWinner.drawAt;
+        setModalOpen(true);
+      }
+    }
+  }, [meta?.lastWinner]);
 
   const getMedalIcon = (rank: number) => {
     if (rank === 1) return <Trophy className="w-6 h-6 text-gold fill-gold" />;
@@ -72,7 +97,7 @@ export const Leaderboard = ({ onBack }: LeaderboardProps) => {
                     {getMedalIcon(entry.rank)}
                   </div>
                   <div className="flex-1">
-                    <p className="font-bold text-foreground">{entry.name}</p>
+                    <p className="font-bold text-foreground">{entry.name} <LotteryBadge playerId={entry.name} className="ml-2" /></p>
                     <p className="text-xs text-muted-foreground">{entry.date}</p>
                   </div>
                 </div>
@@ -93,6 +118,7 @@ export const Leaderboard = ({ onBack }: LeaderboardProps) => {
         </Card>
       </div>
       <div className="scroll-fade-bottom" />
+      <LotteryModal open={modalOpen} winner={meta?.lastWinner ?? null} onClose={() => setModalOpen(false)} />
     </div>
   );
 };
