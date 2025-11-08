@@ -79,12 +79,17 @@ export const StageSelect = ({ onBack, onSelectStage, unlockedStages }: StageSele
           <h2 className="text-3xl font-bold text-primary">SELECT STAGE</h2>
         </div>
 
-        {/* Stage cards */}
-        <div className="grid md:grid-cols-3 gap-4 md:gap-6">
+        {/* Scrollable area (mobile: vertical slide / snap) */}
+        <div
+          className="mt-2 md:mt-4 overflow-y-auto scroll-smooth snap-y snap-mandatory touch-pan-y"
+          style={{ height: 'calc(100svh - 6rem)', WebkitOverflowScrolling: 'touch' }}
+        >
+          {/* Stage cards */}
+          <div className="grid md:grid-cols-3 gap-4 md:gap-6">
           {stages.map((stage) => (
             <Card
               key={stage.id}
-              className={`relative p-4 md:p-6 border-4 transition-all stage-card ${
+              className={`relative p-4 md:p-6 border-4 transition-all stage-card snap-start md:snap-none min-h-[48vh] md:min-h-0 ${
                 stage.unlocked
                   ? "border-primary bg-background/90 cursor-pointer"
                   : "border-muted bg-muted/50 opacity-60 locked"
@@ -149,6 +154,7 @@ export const StageSelect = ({ onBack, onSelectStage, unlockedStages }: StageSele
           ))}
         </div>
       </div>
+    </div>
     </div>
   );
 };
