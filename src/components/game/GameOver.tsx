@@ -73,7 +73,7 @@ export const GameOver = ({ score, onPlayAgain, onMainMenu }: GameOverProps) => {
 
     </div>
     {/* Buttons */}
-  <div className="space-y-1.5 md:space-y-2 pt-1.5 md:pt-3 flex-shrink-0">
+  <div className="space-y-3 md:space-y-4 pt-3 md:pt-4 flex-shrink-0 gameover-buttons">
           <Button onClick={() => setShowLotteryPopup(true)} className="w-full btn-pixel flex items-center justify-center gap-1 py-2 md:py-3 bg-gradient-to-b from-amber-400 to-yellow-300 text-amber-900 border-yellow-500 shadow-md hover:scale-105 transition-transform">
             🎰 LOTTERY
           </Button>
