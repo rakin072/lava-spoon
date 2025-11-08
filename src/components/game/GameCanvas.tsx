@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import Phaser from "phaser";
 import { Button } from "@/components/ui/button";
-import { Heart, Pause, Play, Shield, Zap, X, Settings } from "lucide-react";
+import { Heart, Shield, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { computeDynamicPalette, heatFactor, lightenColor } from "./themeSystem";
 import { SpawnManager, createFallingObject, applyBehavior, SpawnType } from "./fallingSystem";
@@ -26,14 +26,12 @@ export const GameCanvas = ({ stageId, onGameOver, onBack }: GameCanvasProps) => 
   const phaserGameRef = useRef<Phaser.Game | null>(null);
   const [lives, setLives] = useState(3);
   const [score, setScore] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
   const [timeLeft, setTimeLeft] = useState(60);
   const [combo, setCombo] = useState(0);
   const [activePowerUp, setActivePowerUp] = useState<string | null>(null);
   const [powerUpTimeLeft, setPowerUpTimeLeft] = useState(0);
   const { playSound } = useGameAudio();
   const { settings, toggle, setPopupDensity } = useGameSettings();
-  const [showSettings, setShowSettings] = useState(false);
 
   // Keep a live score reference so the game loop can read it without recreating the Phaser game
   const scoreRef = useRef(0);
@@ -976,17 +974,7 @@ export const GameCanvas = ({ stageId, onGameOver, onBack }: GameCanvasProps) => 
     };
   }, [stageId, onGameOver, viewport.zoom]);
 
-  const handlePause = () => {
-    if (phaserGameRef.current) {
-      const scene = phaserGameRef.current.scene.scenes[0];
-      if (isPaused) {
-        scene.scene.resume();
-      } else {
-        scene.scene.pause();
-      }
-      setIsPaused(!isPaused);
-    }
-  };
+  // Pause control removed; game controls are intentionally minimal in embed mode
 
   return (
   <div className="fixed inset-0 z-50 parallax-shell bg-background w-full overflow-hidden">
@@ -1048,24 +1036,7 @@ export const GameCanvas = ({ stageId, onGameOver, onBack }: GameCanvasProps) => 
         style={{ width: '100%', aspectRatio: `${viewport.baseWidth}/${viewport.baseHeight}`, maxHeight: '100%', touchAction: 'none', WebkitTapHighlightColor: 'transparent' }}
       />
 
-      {/* Controls */}
-      <div
-        className="absolute left-1/2 -translate-x-1/2 flex items-center justify-between control-zone z-60"
-        style={{ maxWidth: viewport.baseWidth, width: '100%', bottom: 44, paddingBottom: 'calc(env(safe-area-inset-bottom) + 8px)', left: '50%' }}
-      >
-        <Button onClick={onBack} className="btn-pixel px-3 py-2" aria-label="Exit">
-          <X className="w-5 h-5" />
-        </Button>
-
-        <div className="flex items-center gap-2">
-          <Button onClick={handlePause} className="btn-pixel px-3 py-2" aria-label={isPaused ? 'Resume' : 'Pause'}>
-            {isPaused ? <Play className="w-5 h-5" /> : <Pause className="w-5 h-5" />}
-          </Button>
-          <Button onClick={() => setShowSettings((s) => !s)} variant="secondary" className="btn-pixel px-3 py-2" aria-label="Settings">
-            <Settings className="w-5 h-5" />
-          </Button>
-        </div>
-      </div>
+      {/* Controls removed: exit, pause and settings buttons intentionally hidden */}
 
       <p className="text-sm text-muted-foreground mt-2 mb-0">
         Move with mouse/touch or arrow keys
@@ -1073,34 +1044,7 @@ export const GameCanvas = ({ stageId, onGameOver, onBack }: GameCanvasProps) => 
       {/* Show orientation tip only when user is in landscape on mobile. Portrait is our primary mode now. */}
       <OrientationPrompt show={viewport.orientation === 'landscape' && viewport.device === 'mobile'} />
 
-      {/* Settings panel */}
-      {showSettings && (
-        <div className="fixed top-4 right-4 z-[2000]">
-          <div className="p-4 w-72 border-4 border-primary bg-background/95 backdrop-blur-sm space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="font-bold text-primary">Settings</h3>
-              <button className="text-xs border-2 border-border rounded px-2 py-1" onClick={() => setShowSettings(false)}>Close</button>
-            </div>
-            <div className="space-y-2 text-xs">
-              <ToggleRow label="Post FX" value={settings.postProcessing} onClick={() => toggle('postProcessing')} />
-              <ToggleRow label="Particles" value={settings.particles} onClick={() => toggle('particles')} />
-              <ToggleRow label="Haptics" value={settings.haptics} onClick={() => toggle('haptics')} />
-              <ToggleRow label="Tap Zones" value={settings.tapZones} onClick={() => toggle('tapZones')} />
-              <div className="flex items-center justify-between">
-                <span>Popup Density</span>
-                <select
-                  value={settings.popupDensity}
-                  onChange={(e) => setPopupDensity(e.target.value as any)}
-                  className="bg-card border-2 border-border rounded px-2 py-1 text-xs"
-                >
-                  <option value="full">Full</option>
-                  <option value="reduced">Reduced</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Settings panel removed from HUD to simplify gameplay chrome */}
       </div>
     </div>
   );
