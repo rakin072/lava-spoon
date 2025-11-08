@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import Phaser from "phaser";
 import { Button } from "@/components/ui/button";
-import { Heart, Pause, Play, Shield, Zap } from "lucide-react";
+import { Heart, Pause, Play, Shield, Zap, X, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { computeDynamicPalette, heatFactor, lightenColor } from "./themeSystem";
 import { SpawnManager, createFallingObject, applyBehavior, SpawnType } from "./fallingSystem";
@@ -968,14 +968,14 @@ export const GameCanvas = ({ stageId, onGameOver, onBack }: GameCanvasProps) => 
   };
 
   return (
-    <div className="relative parallax-shell bg-background w-full" style={{ minHeight: '100svh' }}>
+  <div className="fixed inset-0 z-50 parallax-shell bg-background w-full overflow-hidden">
       {/* Parallax background layers */}
       <div className="bg-layer bg-lava-flow" />
       <div className="bg-layer bg-mid-parallax" />
       <div className="bg-layer bg-embers" />
 
       {/* Foreground content */}
-      <div className="relative z-[5] flex flex-col items-center justify-start p-safe-shell game-shell w-full" style={{ paddingLeft: '0.75rem', paddingRight: '0.75rem' }}>
+  <div className="relative z-[5] flex flex-col items-center justify-start p-safe-shell game-shell w-full" style={{ paddingLeft: '0.75rem', paddingRight: '0.75rem' }}>
   {/* HUD */}
   <div className="w-full bg-card border-4 border-primary p-4 mb-4 space-y-2 safe-top-offset" style={{ maxWidth: viewport.baseWidth }}>
         <div className="flex items-center justify-between">
@@ -1024,21 +1024,25 @@ export const GameCanvas = ({ stageId, onGameOver, onBack }: GameCanvasProps) => 
       <div
         ref={gameRef}
         className="border-4 border-primary shadow-2xl game-canvas-wrapper flex-shrink-0"
-        style={{ aspectRatio: `${viewport.baseWidth}/${viewport.baseHeight}`, maxHeight: 'calc(100svh - 240px)', touchAction: 'none', WebkitTapHighlightColor: 'transparent' }}
+        style={{ aspectRatio: `${viewport.baseWidth}/${viewport.baseHeight}`, height: 'calc(100svh - 160px)', touchAction: 'none', WebkitTapHighlightColor: 'transparent' }}
       />
 
       {/* Controls */}
-  <div className="w-full mt-4 flex items-center justify-between control-zone" style={{ maxWidth: viewport.baseWidth }}>
-        <Button onClick={onBack} className="btn-pixel">
-          EXIT
+      <div
+        className="absolute left-1/2 -translate-x-1/2 flex items-center justify-between control-zone z-60"
+        style={{ maxWidth: viewport.baseWidth, width: '100%', bottom: 44, paddingBottom: 'calc(env(safe-area-inset-bottom) + 8px)', left: '50%' }}
+      >
+        <Button onClick={onBack} className="btn-pixel px-3 py-2" aria-label="Exit">
+          <X className="w-5 h-5" />
         </Button>
-        
+
         <div className="flex items-center gap-2">
-        <Button onClick={handlePause} className="btn-pixel">
-          {isPaused ? <Play className="w-5 h-5" /> : <Pause className="w-5 h-5" />}
-          {isPaused ? "RESUME" : "PAUSE"}
-        </Button>
-        <Button onClick={() => setShowSettings((s) => !s)} variant="secondary" className="btn-pixel">⚙️ SETTINGS</Button>
+          <Button onClick={handlePause} className="btn-pixel px-3 py-2" aria-label={isPaused ? 'Resume' : 'Pause'}>
+            {isPaused ? <Play className="w-5 h-5" /> : <Pause className="w-5 h-5" />}
+          </Button>
+          <Button onClick={() => setShowSettings((s) => !s)} variant="secondary" className="btn-pixel px-3 py-2" aria-label="Settings">
+            <Settings className="w-5 h-5" />
+          </Button>
         </div>
       </div>
 
