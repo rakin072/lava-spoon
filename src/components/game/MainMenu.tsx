@@ -41,12 +41,15 @@ export const MainMenu = ({ onPlayClick, onLeaderboardClick, onSkinsClick }: Main
       <Card className="relative z-10 bg-background/90 backdrop-blur-sm border-4 border-primary p-8 max-w-md w-full space-y-8">
         {/* Logo */}
         <div className="text-center space-y-4">
-          <div className="flex items-center justify-center gap-3 animate-float">
-            <Flame className="w-12 h-12 text-secondary animate-pulse-glow" />
-            <h1 className="text-4xl font-bold text-primary drop-shadow-lg">
+          <div className="flex flex-col md:flex-row items-center justify-center gap-3 animate-float">
+            <Flame className="w-10 h-10 md:w-12 md:h-12 text-secondary animate-pulse-glow" />
+            <h1
+              className="font-bold text-primary drop-shadow-lg text-center leading-tight"
+              style={{ fontSize: 'clamp(1.8rem, 8.5vw, 3.25rem)' }}
+            >
               LavaSpoon-X
             </h1>
-            <Flame className="w-12 h-12 text-secondary animate-pulse-glow" />
+            <Flame className="w-10 h-10 md:w-12 md:h-12 text-secondary animate-pulse-glow" />
           </div>
           <p className="text-sm text-muted-foreground">Catch & Survive!</p>
         </div>
