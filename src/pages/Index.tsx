@@ -15,6 +15,10 @@ type GameScreen =
   | "skins";
 
 const Index = () => {
+  // detect embed mode (used when the app is loaded inside an <iframe> or by an external embed URL)
+  const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams('');
+  const embedMode = urlParams.get('embed') === '1' || urlParams.get('embed') === 'true';
+  const embedStageParam = Number(urlParams.get('stage')) || undefined;
   const [currentScreen, setCurrentScreen] = useState<GameScreen>("menu");
   const [selectedStage, setSelectedStage] = useState(() => {
     const stored = localStorage.getItem('lavaLegendsLastStage');
@@ -65,6 +69,17 @@ const Index = () => {
   };
 
   const renderScreen = () => {
+    // If embed mode is enabled, render gameplay directly (GameCanvas only) so an iframe can point to `/?embed=1&stage=1`
+    if (embedMode) {
+      const stageToUse = embedStageParam ?? selectedStage;
+      return (
+        <GameCanvas
+          stageId={stageToUse}
+          onGameOver={handleGameOver}
+          onBack={() => { /* no-op in embed mode */ }}
+        />
+      );
+    }
     switch (currentScreen) {
       case "menu":
         return (
