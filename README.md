@@ -1,6 +1,6 @@
-# Lava Legends — local dev
+# LavaSpoon-X — local dev
 
-This is the local source for the "Lava Legends: Catch & Survive" Vite + React project.
+This is the local source for the "LavaSpoon-X" Vite + React project.
 
 ## Quick start
 

@@ -44,7 +44,7 @@ export const MainMenu = ({ onPlayClick, onLeaderboardClick, onSkinsClick }: Main
           <div className="flex items-center justify-center gap-3 animate-float">
             <Flame className="w-12 h-12 text-secondary animate-pulse-glow" />
             <h1 className="text-4xl font-bold text-primary drop-shadow-lg">
-              LAVA LEGENDS
+              LavaSpoon-X
             </h1>
             <Flame className="w-12 h-12 text-secondary animate-pulse-glow" />
           </div>

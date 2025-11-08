@@ -15,9 +15,9 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
   includeAssets: ["favicon.svg", "robots.txt"],
       manifest: {
-        name: "Lava Legends: Catch & Survive",
-        short_name: "Lava Legends",
-        description: "An exciting volcanic-themed catch game with power-ups and challenges",
+  name: "LavaSpoon-X",
+  short_name: "LavaSpoon",
+  description: "An exciting volcanic-themed arcade — LavaSpoon-X",
         theme_color: "#8B0000",
         background_color: "#8B0000",
         display: "standalone",

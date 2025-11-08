@@ -1,6 +1,6 @@
 ## Visual Rendering & Dynamic Color System
 
-This document describes the advanced visual stack for Lava Legends.
+This document describes the advanced visual stack for LavaSpoon-X.
 
 ### 1. Dynamic Color / Theme System
 Implemented in `src/components/game/themeSystem.ts`.
