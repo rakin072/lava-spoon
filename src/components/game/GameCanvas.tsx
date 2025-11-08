@@ -76,8 +76,29 @@ export const GameCanvas = ({ stageId, onGameOver, onBack }: GameCanvasProps) => 
       },
     };
 
-    const game = new Phaser.Game(config);
+  let resizeObserver: ResizeObserver | null = null;
+  const game = new Phaser.Game(config);
     phaserGameRef.current = game;
+
+    // Resize observer: ensure Phaser canvas resizes to match container when iframe/container size changes
+    try {
+      if (gameRef.current && (window as any).ResizeObserver) {
+        resizeObserver = new (window as any).ResizeObserver((entries: any) => {
+          for (const entry of entries) {
+            const cr = entry.contentRect;
+            try {
+              const g = phaserGameRef.current as Phaser.Game | null;
+              if (g && g.scale) {
+                g.scale.resize(Math.round(cr.width), Math.round(cr.height));
+                const s = g.scene && (g.scene.scenes && g.scene.scenes[0]);
+                try { s?.cameras?.main?.setViewport(0, 0, Math.round(cr.width), Math.round(cr.height)); } catch {}
+              }
+            } catch {}
+          }
+        });
+        resizeObserver.observe(gameRef.current);
+      }
+    } catch (e) {}
 
   let playerController: PlayerController;
   let pointerX: number | null = null;
@@ -98,8 +119,8 @@ export const GameCanvas = ({ stageId, onGameOver, onBack }: GameCanvasProps) => 
   // Chain collectible tracking
   let chainIndexExpected = 0;
   const chainLength = 5;
-    let comboResetTimer: NodeJS.Timeout;
-    let sceneRef: Phaser.Scene;
+  let comboResetTimer: NodeJS.Timeout;
+  let sceneRef: Phaser.Scene;
   // Guard to ensure game-over logic (toasts / callbacks) run only once
   let gameOverHandled = false;
 
@@ -1024,7 +1045,7 @@ export const GameCanvas = ({ stageId, onGameOver, onBack }: GameCanvasProps) => 
       <div
         ref={gameRef}
         className="border-4 border-primary shadow-2xl game-canvas-wrapper flex-shrink-0"
-        style={{ aspectRatio: `${viewport.baseWidth}/${viewport.baseHeight}`, height: 'calc(100svh - 160px)', touchAction: 'none', WebkitTapHighlightColor: 'transparent' }}
+        style={{ width: '100%', aspectRatio: `${viewport.baseWidth}/${viewport.baseHeight}`, maxHeight: '100%', touchAction: 'none', WebkitTapHighlightColor: 'transparent' }}
       />
 
       {/* Controls */}

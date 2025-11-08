@@ -44,9 +44,11 @@ export class PlayerController {
     this.currentX = x;
     this.targetX = x;
     this.physics = {
-      // ⚙️ Adjusted defaults for smoother drag feel
-      drag: physics?.drag ?? 0.9,            // ↑ smoother slowdown
-      elasticity: physics?.elasticity ?? 0.08, // ↓ less overshoot
+      // ⚙️ Tweaked defaults for slower, more touch-friendly feel
+      // Lower elasticity = gentler acceleration toward target
+      elasticity: physics?.elasticity ?? 0.06,
+      // Lower drag value (multiply velocity) increases damping for a slower settle
+      drag: physics?.drag ?? 0.82,
       // Smaller wobble on narrow/portrait layouts to avoid visible "shake"
       wobbleAmp: physics?.wobbleAmp ?? (scene.scale.width <= 544 ? 0.6 : 2),
       wobbleFreq: physics?.wobbleFreq ?? 0.1,
@@ -61,12 +63,16 @@ export class PlayerController {
     // 🧠 NEW — enable continuous polling (for smooth touch move)
     try { scene.input.setPollAlways(); } catch {}
 
-    // 🧩 Smooth pointer tracking
+    // 🧩 Smooth pointer tracking (more responsive for touch)
     scene.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
       if (!pointer.isDown) return;
       if (this.smoothedPointerX == null) this.smoothedPointerX = pointer.x;
-      this.smoothedPointerX += (pointer.x - this.smoothedPointerX) * 0.4; // interpolation
+      // higher lerp factor for touch responsiveness
+      this.smoothedPointerX += (pointer.x - this.smoothedPointerX) * 0.6; // interpolation
     });
+
+    // Clear smoothed pointer on release to avoid lingering targets
+    scene.input.on('pointerup', () => { this.smoothedPointerX = null; });
 
     // 👆 Optional: drag directly on player
     try {
@@ -196,10 +202,14 @@ export class PlayerController {
   // Respect current game width for clamping (portrait-safe)
   const clampMax = this.scene.scale.width - 30;
   if (activePointer !== null) this.targetX = Phaser.Math.Clamp(activePointer, 30, clampMax);
-    const { drag, elasticity, wobbleAmp, wobbleFreq } = this.physics;
-    const force = (this.targetX - this.currentX) * elasticity;
-    this.velocity += force;
-    this.velocity *= drag;
+  const { drag, elasticity, wobbleAmp, wobbleFreq } = this.physics;
+  const force = (this.targetX - this.currentX) * elasticity;
+  this.velocity += force;
+  // clamp small velocities to zero to reduce jitter
+  if (Math.abs(this.velocity) < 0.01) this.velocity = 0;
+  this.velocity *= drag;
+  // limit max velocity so catcher never teleports
+  this.velocity = Phaser.Math.Clamp(this.velocity, -22, 22);
     this.currentX += this.velocity;
     // Only apply wobble when actually moving and snap to integer pixels to prevent jitter
     const wobble = Math.abs(this.velocity) > 0.6 ? Math.sin(time * wobbleFreq) * wobbleAmp : 0;
