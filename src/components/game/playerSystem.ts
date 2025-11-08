@@ -30,9 +30,15 @@ export class PlayerController {
   predictiveHitbox: Phaser.GameObjects.Rectangle;
   trailGroup: Phaser.GameObjects.Group;
 
+  // Match falling object nominal size from fallingSystem.createFallingObject
+  // (width/height base = 40). Kept here to avoid cross-file coupling.
+  // Increased from 40 to 56 for leniency (matches ~1.4x max falling object size)
+  static readonly CATCHER_W = 56;
+  static readonly CATCHER_H = 56;
+
   constructor(scene: Phaser.Scene, x: number, y: number, physics?: Partial<PlayerPhysicsConfig>) {
     this.scene = scene;
-    this.sprite = scene.add.rectangle(x, y, 60, 80, 0xffd700).setVisible(false);
+  this.sprite = scene.add.rectangle(x, y, PlayerController.CATCHER_W, PlayerController.CATCHER_H, 0xffd700).setVisible(false);
     scene.physics.add.existing(this.sprite);
     (this.sprite.body as Phaser.Physics.Arcade.Body).setCollideWorldBounds(true).setImmovable(true);
     this.currentX = x;
@@ -46,7 +52,7 @@ export class PlayerController {
       wobbleFreq: physics?.wobbleFreq ?? 0.1,
     };
     // Predictive hitbox slightly ahead of movement direction
-    this.predictiveHitbox = scene.add.rectangle(x, y, 70, 90).setVisible(false);
+  this.predictiveHitbox = scene.add.rectangle(x, y, PlayerController.CATCHER_W, PlayerController.CATCHER_H).setVisible(false);
     scene.physics.add.existing(this.predictiveHitbox);
     (this.predictiveHitbox.body as Phaser.Physics.Arcade.Body).allowGravity = false;
 
@@ -213,7 +219,7 @@ export class PlayerController {
 
     // Trail effect when speed boost or powerup active
     if (speedBoost && this.frameCounter % 3 === 0) {
-      const ghost = this.scene.add.rectangle(this.sprite.x, this.sprite.y, 60, 80, 0xffd700, 0.5);
+      const ghost = this.scene.add.rectangle(this.sprite.x, this.sprite.y, PlayerController.CATCHER_W, PlayerController.CATCHER_H, 0xffd700, 0.5);
       ghost.setScale(stretch, squash);
       this.trailGroup.add(ghost);
       this.scene.tweens.add({
