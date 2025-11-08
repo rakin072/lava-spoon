@@ -23,6 +23,7 @@ export class PlayerController {
   velocity = 0;
   targetX = 0;
   currentX = 0;
+  smoothedPointerX: number | null = null;  // 👈 NEW
   frameCounter = 0;
   invincibleUntil = 0;
   physics: PlayerPhysicsConfig;
@@ -31,14 +32,15 @@ export class PlayerController {
 
   constructor(scene: Phaser.Scene, x: number, y: number, physics?: Partial<PlayerPhysicsConfig>) {
     this.scene = scene;
-  this.sprite = scene.add.rectangle(x, y, 60, 80, 0xffd700).setVisible(false);
+    this.sprite = scene.add.rectangle(x, y, 60, 80, 0xffd700).setVisible(false);
     scene.physics.add.existing(this.sprite);
     (this.sprite.body as Phaser.Physics.Arcade.Body).setCollideWorldBounds(true).setImmovable(true);
     this.currentX = x;
     this.targetX = x;
     this.physics = {
-      drag: physics?.drag ?? 0.85,
-      elasticity: physics?.elasticity ?? 0.12,
+      // ⚙️ Adjusted defaults for smoother drag feel
+      drag: physics?.drag ?? 0.9,            // ↑ smoother slowdown
+      elasticity: physics?.elasticity ?? 0.08, // ↓ less overshoot
       // Smaller wobble on narrow/portrait layouts to avoid visible "shake"
       wobbleAmp: physics?.wobbleAmp ?? (scene.scale.width <= 544 ? 0.6 : 2),
       wobbleFreq: physics?.wobbleFreq ?? 0.1,
@@ -49,6 +51,25 @@ export class PlayerController {
     (this.predictiveHitbox.body as Phaser.Physics.Arcade.Body).allowGravity = false;
 
     this.trailGroup = scene.add.group();
+
+    // 🧠 NEW — enable continuous polling (for smooth touch move)
+    try { scene.input.setPollAlways(); } catch {}
+
+    // 🧩 Smooth pointer tracking
+    scene.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+      if (!pointer.isDown) return;
+      if (this.smoothedPointerX == null) this.smoothedPointerX = pointer.x;
+      this.smoothedPointerX += (pointer.x - this.smoothedPointerX) * 0.4; // interpolation
+    });
+
+    // 👆 Optional: drag directly on player
+    try {
+      this.sprite.setInteractive();
+      scene.input.setDraggable(this.sprite);
+      scene.input.on('drag', (_pointer, _gameObject, dragX: number) => {
+        this.smoothedPointerX = dragX;
+      });
+    } catch {}
   }
 
   attachVisual(sprite: Phaser.GameObjects.Sprite) {
@@ -163,10 +184,12 @@ export class PlayerController {
   }
 
   update(pointerX: number | null, time: number, magnetActive: boolean, speedBoost: boolean) {
-    this.frameCounter++;
-    // Respect current game width for clamping (portrait-safe)
-    const clampMax = this.scene.scale.width - 30;
-    if (pointerX !== null) this.targetX = Phaser.Math.Clamp(pointerX, 30, clampMax);
+  this.frameCounter++;
+  // 👇 Use smoothed pointer if available
+  const activePointer = this.smoothedPointerX ?? pointerX;
+  // Respect current game width for clamping (portrait-safe)
+  const clampMax = this.scene.scale.width - 30;
+  if (activePointer !== null) this.targetX = Phaser.Math.Clamp(activePointer, 30, clampMax);
     const { drag, elasticity, wobbleAmp, wobbleFreq } = this.physics;
     const force = (this.targetX - this.currentX) * elasticity;
     this.velocity += force;
